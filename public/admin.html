@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#b91827" />
+    <title>接喜糖挑战后台</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section class="admin-card" id="loginPanel">
+        <h1>管理员后台</h1>
+        <p>查看来宾排行榜和每局成绩。</p>
+        <form id="adminLogin" class="entry-form">
+          <label for="password">管理员密码</label>
+          <input id="password" type="password" autocomplete="current-password" placeholder="请输入密码" />
+          <button type="submit">登录</button>
+        </form>
+      </section>
+
+      <section class="admin-card hidden" id="dashboard">
+        <div class="board-header">
+          <div>
+            <p class="eyebrow">Wedding Candy Game</p>
+            <h1>排行榜后台</h1>
+          </div>
+          <button id="refreshButton" class="ghost-button compact">刷新</button>
+        </div>
+        <div class="stats-grid">
+          <div><span>参与人数</span><strong id="playerCount">0</strong></div>
+          <div><span>完成局数</span><strong id="attemptCount">0</strong></div>
+        </div>
+        <ol id="adminLeaderboard" class="leaderboard-list admin"></ol>
+      </section>
+      <div id="toast" class="toast" role="status"></div>
+    </main>
+    <script src="/admin.js" type="module"></script>
+  </body>
+</html>

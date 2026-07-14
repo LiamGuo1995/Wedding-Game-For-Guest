@@ -1,0 +1,23 @@
+{
+  "couple": {
+    "groom": "新郎名字",
+    "bride": "新娘名字",
+    "date": "2026-10-01"
+  },
+  "event": {
+    "title": "接喜糖挑战",
+    "subtitle": "30 秒接住喜糖、红包和囍字，最高分赢取新人准备的小礼物",
+    "location": "闽南婚礼喜宴",
+    "rewardText": "排行榜前三名可领取伴手礼"
+  },
+  "game": {
+    "durationSeconds": 30,
+    "maxAttemptsPerPlayer": 3,
+    "leaderboardLimit": 50
+  },
+  "theme": {
+    "primary": "#b91827",
+    "gold": "#f3c766",
+    "background": "#fff7e8"
+  }
+}

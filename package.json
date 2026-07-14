@@ -1,0 +1,14 @@
+{
+  "name": "candy-wedding-game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A customizable wedding candy-catching game with leaderboard and admin dashboard.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

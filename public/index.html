@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#b91827" />
+    <title>接喜糖挑战</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="entry" class="screen active">
+        <div class="brand-mark">囍</div>
+        <p class="eyebrow" id="weddingDate">婚礼喜宴</p>
+        <h1 id="gameTitle">接喜糖挑战</h1>
+        <p class="subtitle" id="gameSubtitle">30 秒接住喜糖、红包和囍字，最高分赢取新人准备的小礼物</p>
+        <div class="couple-card">
+          <span id="groomName">新郎</span>
+          <b>和</b>
+          <span id="brideName">新娘</span>
+        </div>
+        <form id="playerForm" class="entry-form">
+          <label for="playerName">填写姓名或称呼</label>
+          <input id="playerName" name="playerName" autocomplete="name" maxlength="24" placeholder="例如：三舅妈 / 新娘同学小陈" />
+          <button type="submit">进入游戏</button>
+        </form>
+        <p class="small-note">每人最多 3 次机会，取最高分进入排行榜。</p>
+      </section>
+
+      <section id="ready" class="screen">
+        <div class="top-line">
+          <span id="playerGreeting">来宾你好</span>
+          <span id="attemptsText">剩余 3 次</span>
+        </div>
+        <div class="rule-panel">
+          <h2>规则</h2>
+          <p>左右拖动喜篮，接住喜糖、红包、囍字加分。避开酒杯，连续接中会有连击加成。</p>
+          <p id="rewardText">排行榜前三名可领取伴手礼</p>
+        </div>
+        <button id="startButton">开始 30 秒挑战</button>
+        <button id="showBoardButton" class="ghost-button">查看排行榜</button>
+      </section>
+
+      <section id="game" class="screen game-screen">
+        <div class="hud">
+          <div><span>分数</span><strong id="scoreText">0</strong></div>
+          <div><span>连击</span><strong id="comboText">0</strong></div>
+          <div><span>时间</span><strong id="timeText">30</strong></div>
+        </div>
+        <canvas id="gameCanvas" aria-label="接喜糖小游戏"></canvas>
+        <div class="touch-hint">按住屏幕左右拖动喜篮</div>
+      </section>
+
+      <section id="result" class="screen">
+        <div class="brand-mark small">囍</div>
+        <p class="eyebrow">本局得分</p>
+        <h2 id="finalScore">0</h2>
+        <p id="resultMeta">还有 2 次机会</p>
+        <button id="retryButton">再玩一次</button>
+        <button id="resultBoardButton" class="ghost-button">查看排行榜</button>
+      </section>
+
+      <section id="leaderboard" class="screen">
+        <div class="board-header">
+          <div>
+            <p class="eyebrow">今日榜单</p>
+            <h2>排行榜</h2>
+          </div>
+          <button id="backButton" class="icon-button" aria-label="返回">×</button>
+        </div>
+        <ol id="leaderboardList" class="leaderboard-list"></ol>
+      </section>
+
+      <div id="toast" class="toast" role="status"></div>
+    </main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
