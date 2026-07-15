@@ -331,17 +331,40 @@ function drawItem(item) {
     ctx.textBaseline = "middle";
     ctx.fillText("+5", 0, 2);
   } else {
-    ctx.fillStyle = "#ff6580";
+    ctx.fillStyle = "#f3c766";
     ctx.beginPath();
-    roundedRect(ctx, -18, -12, 36, 24, 8);
+    ctx.moveTo(-27, -4);
+    ctx.lineTo(-17, -13);
+    ctx.lineTo(-14, -6);
+    ctx.lineTo(-14, 6);
+    ctx.lineTo(-17, 13);
+    ctx.lineTo(-27, 4);
+    ctx.closePath();
     ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(27, -4);
+    ctx.lineTo(17, -13);
+    ctx.lineTo(14, -6);
+    ctx.lineTo(14, 6);
+    ctx.lineTo(17, 13);
+    ctx.lineTo(27, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#e93645";
+    ctx.beginPath();
+    roundedRect(ctx, -17, -14, 34, 28, 7);
+    ctx.fill();
+    ctx.strokeStyle = "#f3c766";
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.fillStyle = "#fff1c9";
-    ctx.fillRect(-4, -12, 8, 24);
-    ctx.fillStyle = "#8b2d1f";
     ctx.font = "bold 12px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("+1", 0, 1);
+    ctx.fillText("喜", 0, -1);
+    ctx.fillStyle = "#8b2d1f";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText("+1", 0, 11);
   }
   ctx.restore();
 }
