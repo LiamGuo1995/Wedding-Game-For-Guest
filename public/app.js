@@ -242,18 +242,18 @@ function makeItem(width) {
   const difficulty = Math.min(1, elapsed / state.config.game.durationSeconds);
   const roll = Math.random();
   let type = "candy";
-  if (roll > 0.78) type = "gold";
-  if (roll > 0.9) type = "hazard";
-  if (roll > 0.965) type = "double";
-  const points = { candy: 10, gold: 25, double: 40, hazard: -25 }[type];
+  if (roll > 0.62) type = "redPacket";
+  if (roll > 0.82) type = "hazard";
+  if (roll > 0.93) type = "ingot";
+  const points = { candy: 1, redPacket: 2, ingot: 5, hazard: -3 }[type];
   return {
     id: Math.random().toString(36).slice(2),
     type,
     x: rand(24, width - 24),
     y: -30,
-    radius: type === "double" ? 21 : 18,
-    speed: rand(150, 230) + difficulty * 170,
-    drift: rand(-32, 32),
+    radius: type === "ingot" ? 20 : 18,
+    speed: rand(230, 340) + difficulty * 320,
+    drift: rand(-70, 70) * (0.45 + difficulty),
     points,
     spin: rand(0, Math.PI * 2)
   };
@@ -279,37 +279,57 @@ function drawItem(item) {
   ctx.translate(item.x, item.y);
   ctx.rotate(item.spin);
   if (item.type === "hazard") {
+    ctx.fillStyle = "rgba(210, 22, 36, 0.14)";
+    ctx.strokeStyle = "#d21624";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 27, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-19, -19);
+    ctx.lineTo(19, 19);
+    ctx.stroke();
     ctx.fillStyle = "#f7f7f7";
-    ctx.strokeStyle = "#70423a";
+    ctx.strokeStyle = "#3d2521";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(-12, -15);
-    ctx.lineTo(12, -15);
-    ctx.lineTo(7, 10);
-    ctx.lineTo(-7, 10);
+    ctx.moveTo(-11, -13);
+    ctx.lineTo(11, -13);
+    ctx.lineTo(7, 9);
+    ctx.lineTo(-7, 9);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#7c1e23";
-    ctx.fillRect(-8, -11, 16, 7);
-  } else if (item.type === "gold") {
+    ctx.fillRect(-7, -9, 14, 6);
+    ctx.fillStyle = "#d21624";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("-3", 0, 23);
+  } else if (item.type === "redPacket") {
     ctx.fillStyle = "#e02030";
     ctx.fillRect(-18, -13, 36, 26);
     ctx.fillStyle = "#f3c766";
-    ctx.font = "18px serif";
+    ctx.font = "bold 14px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("囍", 0, 1);
-  } else if (item.type === "double") {
+    ctx.fillText("+2", 0, 1);
+  } else if (item.type === "ingot") {
     ctx.fillStyle = "#f3c766";
     ctx.beginPath();
-    ctx.arc(0, 0, 21, 0, Math.PI * 2);
+    ctx.ellipse(0, 3, 21, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffd978";
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 13, 9, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#b91827";
-    ctx.font = "18px sans-serif";
+    ctx.font = "bold 13px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("礼", 0, 1);
+    ctx.fillText("+5", 0, 2);
   } else {
     ctx.fillStyle = "#ff6580";
     ctx.beginPath();
@@ -317,6 +337,11 @@ function drawItem(item) {
     ctx.fill();
     ctx.fillStyle = "#fff1c9";
     ctx.fillRect(-4, -12, 8, 24);
+    ctx.fillStyle = "#8b2d1f";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("+1", 0, 1);
   }
   ctx.restore();
 }
@@ -379,7 +404,8 @@ function update(timestamp) {
   const difficulty = Math.min(1, state.elapsed / duration);
   if (state.spawnTimer <= 0) {
     state.items.push(makeItem(width));
-    state.spawnTimer = Math.max(250, 760 - difficulty * 430 + rand(-120, 120));
+    if (difficulty > 0.42 && Math.random() < difficulty * 0.42) state.items.push(makeItem(width));
+    state.spawnTimer = Math.max(150, 520 - difficulty * 310 + rand(-90, 80));
   }
 
   for (const item of state.items) {
@@ -398,7 +424,7 @@ function update(timestamp) {
       } else {
         state.combo += 1;
         state.caught += 1;
-        const comboBonus = Math.floor(state.combo / 5) * 5;
+        const comboBonus = Math.floor(state.combo / 8);
         state.score += item.points + comboBonus;
       }
     } else if (item.y - item.radius > height) {
