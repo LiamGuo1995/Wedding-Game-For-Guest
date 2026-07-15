@@ -27,6 +27,8 @@ const state = {
 const canvas = document.querySelector("#gameCanvas");
 const ctx = canvas.getContext("2d");
 const toast = document.querySelector("#toast");
+const staticStoreKey = "candy_game_static_store";
+let staticMode = false;
 
 function showToast(message) {
   toast.textContent = message;
@@ -40,20 +42,162 @@ function showScreen(name) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(path, {
-    headers: { "content-type": "application/json", ...(options.headers || {}) },
-    ...options
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "请求失败");
-  return body;
+  if (staticMode && path.startsWith("/api/")) return staticRequest(path, options);
+  try {
+    const response = await fetch(path, {
+      headers: { "content-type": "application/json", ...(options.headers || {}) },
+      ...options
+    });
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json") ? await response.json() : {};
+    if (!response.ok) throw new Error(body.error || "请求失败");
+    return body;
+  } catch (error) {
+    if (path.startsWith("/api/")) {
+      staticMode = true;
+      return staticRequest(path, options);
+    }
+    throw error;
+  }
+}
+
+function readStaticStore() {
+  const fallback = { players: [], attempts: [] };
+  try {
+    return JSON.parse(localStorage.getItem(staticStoreKey)) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStaticStore(store) {
+  localStorage.setItem(staticStoreKey, JSON.stringify(store));
+}
+
+function parseBody(options) {
+  try {
+    return options.body ? JSON.parse(options.body) : {};
+  } catch {
+    return {};
+  }
+}
+
+function makeId() {
+  return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function roundedRect(context, x, y, width, height, radius) {
+  if (context.roundRect) {
+    context.roundRect(x, y, width, height, radius);
+    return;
+  }
+  const r = Math.min(radius, Math.abs(width) / 2, Math.abs(height) / 2);
+  context.moveTo(x + r, y);
+  context.lineTo(x + width - r, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + r);
+  context.lineTo(x + width, y + height - r);
+  context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  context.lineTo(x + r, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - r);
+  context.lineTo(x, y + r);
+  context.quadraticCurveTo(x, y, x + r, y);
+}
+
+function staticLeaderboard(limit = 50) {
+  const store = readStaticStore();
+  const bestByPlayer = new Map();
+  for (const attempt of store.attempts) {
+    const current = bestByPlayer.get(attempt.playerId);
+    if (!current || attempt.score > current.score) bestByPlayer.set(attempt.playerId, attempt);
+  }
+  return [...bestByPlayer.values()]
+    .sort((a, b) => b.score - a.score || new Date(a.completedAt) - new Date(b.completedAt))
+    .slice(0, limit)
+    .map((attempt, index) => {
+      const player = store.players.find((item) => item.id === attempt.playerId);
+      return {
+        rank: index + 1,
+        name: player?.name || "来宾",
+        score: attempt.score,
+        attemptsUsed: store.attempts.filter((item) => item.playerId === attempt.playerId).length,
+        completedAt: attempt.completedAt
+      };
+    });
+}
+
+async function loadStaticConfig() {
+  const response = await fetch("./config.static.json");
+  return response.json();
+}
+
+async function staticRequest(path, options = {}) {
+  if (path === "/api/config") return loadStaticConfig();
+  const body = parseBody(options);
+  const config = state.config || (await loadStaticConfig());
+  const store = readStaticStore();
+
+  if (path === "/api/player") {
+    const name = String(body.name || "").trim().slice(0, 24);
+    if (name.length < 2) throw new Error("请填写至少两个字的姓名或称呼");
+    const identity = `${body.deviceId || getDeviceId()}:${name}`;
+    let player = store.players.find((item) => item.identity === identity);
+    if (!player) {
+      player = { id: makeId(), identity, name, createdAt: new Date().toISOString() };
+      store.players.push(player);
+      writeStaticStore(store);
+    }
+    const attemptsUsed = store.attempts.filter((item) => item.playerId === player.id).length;
+    return {
+      playerId: player.id,
+      name,
+      attemptsUsed,
+      attemptsLeft: Math.max(0, config.game.maxAttemptsPerPlayer - attemptsUsed)
+    };
+  }
+
+  if (path === "/api/game/start") {
+    const player = store.players.find((item) => item.id === body.playerId);
+    if (!player) throw new Error("玩家不存在，请重新填写姓名");
+    const attemptsUsed = store.attempts.filter((item) => item.playerId === player.id).length;
+    if (attemptsUsed >= config.game.maxAttemptsPerPlayer) throw new Error("你的 3 次机会已经用完");
+    return { token: `static-${Date.now()}-${player.id}`, durationSeconds: config.game.durationSeconds };
+  }
+
+  if (path === "/api/game/finish") {
+    const playerId = String(body.token || "").split("-").slice(2).join("-");
+    const player = store.players.find((item) => item.id === playerId);
+    if (!player) throw new Error("本局凭证无效");
+    const attemptsUsed = store.attempts.filter((item) => item.playerId === player.id).length;
+    if (attemptsUsed >= config.game.maxAttemptsPerPlayer) throw new Error("你的 3 次机会已经用完");
+    const score = Math.max(0, Math.min(9999, Number.parseInt(body.score, 10) || 0));
+    store.attempts.push({
+      id: makeId(),
+      playerId: player.id,
+      score,
+      stats: body.stats || {},
+      completedAt: new Date().toISOString()
+    });
+    writeStaticStore(store);
+    return {
+      score,
+      attemptsUsed: attemptsUsed + 1,
+      attemptsLeft: Math.max(0, config.game.maxAttemptsPerPlayer - attemptsUsed - 1),
+      leaderboard: staticLeaderboard(config.game.leaderboardLimit)
+    };
+  }
+
+  if (path === "/api/leaderboard") {
+    return { leaderboard: staticLeaderboard(config.game.leaderboardLimit) };
+  }
+
+  throw new Error("当前静态演示模式不支持这个接口");
 }
 
 function getDeviceId() {
   const key = "candy_game_device_id";
   let id = localStorage.getItem(key);
   if (!id) {
-    id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    id = makeId();
     localStorage.setItem(key, id);
   }
   return id;
@@ -169,7 +313,7 @@ function drawItem(item) {
   } else {
     ctx.fillStyle = "#ff6580";
     ctx.beginPath();
-    ctx.roundRect(-18, -12, 36, 24, 8);
+    roundedRect(ctx, -18, -12, 36, 24, 8);
     ctx.fill();
     ctx.fillStyle = "#fff1c9";
     ctx.fillRect(-4, -12, 8, 24);
@@ -183,7 +327,7 @@ function drawBasket() {
   ctx.translate(basket.x, basket.y);
   ctx.fillStyle = "#8b2d1f";
   ctx.beginPath();
-  ctx.roundRect(-basket.width / 2, -basket.height / 2, basket.width, basket.height, 12);
+  roundedRect(ctx, -basket.width / 2, -basket.height / 2, basket.width, basket.height, 12);
   ctx.fill();
   ctx.strokeStyle = "#f3c766";
   ctx.lineWidth = 5;
@@ -419,6 +563,7 @@ window.addEventListener("orientationchange", () => window.setTimeout(resizeCanva
 async function init() {
   try {
     applyConfig(await request("/api/config"));
+    if (staticMode) showToast("当前是静态试玩模式，排行榜只保存在本机");
     resizeCanvas();
   } catch (error) {
     showToast(error.message);

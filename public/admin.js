@@ -1,4 +1,6 @@
 const toast = document.querySelector("#toast");
+const staticStoreKey = "candy_game_static_store";
+let staticMode = false;
 
 function showToast(message) {
   toast.textContent = message;
@@ -7,13 +9,56 @@ function showToast(message) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(path, {
-    headers: { "content-type": "application/json", ...(options.headers || {}) },
-    ...options
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "请求失败");
-  return body;
+  if (staticMode && path.startsWith("/api/")) return staticRequest(path, options);
+  try {
+    const response = await fetch(path, {
+      headers: { "content-type": "application/json", ...(options.headers || {}) },
+      ...options
+    });
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json") ? await response.json() : {};
+    if (!response.ok) throw new Error(body.error || "请求失败");
+    return body;
+  } catch (error) {
+    if (path.startsWith("/api/")) {
+      staticMode = true;
+      return staticRequest(path, options);
+    }
+    throw error;
+  }
+}
+
+function readStaticStore() {
+  try {
+    return JSON.parse(localStorage.getItem(staticStoreKey)) || { players: [], attempts: [] };
+  } catch {
+    return { players: [], attempts: [] };
+  }
+}
+
+function staticRequest(path, options = {}) {
+  if (path === "/api/admin/login") return { ok: true };
+  if (path !== "/api/admin/leaderboard") throw new Error("当前静态演示模式不支持这个接口");
+  const store = readStaticStore();
+  const bestByPlayer = new Map();
+  for (const attempt of store.attempts) {
+    const current = bestByPlayer.get(attempt.playerId);
+    if (!current || attempt.score > current.score) bestByPlayer.set(attempt.playerId, attempt);
+  }
+  const leaderboard = [...bestByPlayer.values()]
+    .sort((a, b) => b.score - a.score || new Date(a.completedAt) - new Date(b.completedAt))
+    .slice(0, 50)
+    .map((attempt, index) => {
+      const player = store.players.find((item) => item.id === attempt.playerId);
+      return {
+        rank: index + 1,
+        name: player?.name || "来宾",
+        score: attempt.score,
+        attemptsUsed: store.attempts.filter((item) => item.playerId === attempt.playerId).length,
+        completedAt: attempt.completedAt
+      };
+    });
+  return { players: store.players.length, attempts: store.attempts.length, leaderboard, rawAttempts: store.attempts };
 }
 
 function renderLeaderboard(items) {
@@ -44,6 +89,7 @@ async function loadDashboard() {
   renderLeaderboard(result.leaderboard);
   document.querySelector("#loginPanel").classList.add("hidden");
   document.querySelector("#dashboard").classList.remove("hidden");
+  if (staticMode) showToast("当前是静态试玩模式，只显示本机成绩");
 }
 
 document.querySelector("#adminLogin").addEventListener("submit", async (event) => {

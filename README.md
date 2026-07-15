@@ -29,6 +29,14 @@ APP_SECRET="replace-with-random-secret" ADMIN_PASSWORD="your-admin-password" nod
 
 默认后台密码是 `admin123`，正式使用前必须通过 `ADMIN_PASSWORD` 环境变量修改。
 
+## GitHub Pages 试玩版
+
+仓库包含 GitHub Pages 自动部署配置。推送到 `main` 后，会把 `public/` 目录部署为静态试玩版。
+
+静态试玩版可以直接打开、填写姓名、玩游戏、查看本机排行榜；但它没有真正的服务端数据库，因此排行榜只保存在当前手机或浏览器里，不能作为婚礼现场全场排名使用。
+
+婚礼现场正式使用时，请部署 Node 服务版本，这样所有来宾分数才会进入同一个排行榜，管理员后台也才能看到全场数据。
+
 ## 定制婚礼信息
 
 编辑 `config.json`：
